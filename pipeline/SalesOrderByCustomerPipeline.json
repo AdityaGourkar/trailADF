@@ -1,0 +1,60 @@
+{
+	"name": "SalesOrderByCustomerPipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy data from OLTP to Blob",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT Firstname +' '+ Lastname AS 'FullName of Customer' ,\n\t\t\tName AS 'Product Brought by customer',Salesperson ,\n\t\t\torderqty AS 'Total quantity ordered',SUM(orderqty)*Unitprice AS 'WorthOfOrder'\n\t\tFROM [SalesLT].[Customer],[SalesLT].[Product],[SalesLT].[SalesOrderHeader],[SalesLT].[SalesOrderDetail]\n\t\tWHERE \n\t\t\t[SalesLT].[Customer].customerId = [SalesLT].[SalesOrderHeader].customerId \n\t\t\tAND\n\t\t\t[SalesLT].[Product].ProductID = [SalesLT].[SalesOrderDetail].ProductID \n\t\t\tAND\n\t\t\t[SalesLT].[SalesOrderHeader].salesorderID = [SalesLT].[SalesOrderDetail].salesOrderID\n\t\tGROUP BY FirstName,LastName,Name,Salesperson,orderqty,UnitPrice\n\t\tORDER BY WorthOfOrder DESC;",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"tableOption": "autoCreate",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "AzureSqlProductTableSourceDS",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "AzureSqlTableDS",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2020-12-18T06:35:23Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
